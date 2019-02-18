@@ -1,0 +1,381 @@
+---
+title: "GGPLOT2 Assignment"
+author: "MBD O-1-4 (Group D)"
+date: "`r format(Sys.time(), '%d-%B-%Y')`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+options(repos=c(CRAN="https://cran.rediris.es/"))
+```
+
+## Installation
+Check if all required packages are installed, load their corresponding libraries and install the fonts.
+```{r packages, echo = FALSE}
+if(!'dplyr'%in%installed.packages()){
+  install.packages('dplyr')
+}
+
+
+if(!'tidyr'%in%installed.packages()){
+  install.packages('tidyr')
+}
+
+if(!'scales'%in%installed.packages()){
+  install.packages('scales')
+}
+
+
+if(!'ggalt'%in%installed.packages()){
+  install.packages('ggalt')
+}
+
+if(!'ggExtra'%in%installed.packages()){
+  install.packages('ggExtra')
+}
+
+if(!'ggplot2'%in%installed.packages()){
+  install.packages('ggplot2')
+}
+
+if(!'ggtheme'%in%installed.packages()){
+  install.packages('ggtheme')
+}
+
+if(!"ggthemes" %in% installed.packages()) {
+  install.packages("ggthemes")
+}
+
+if(!'ggpubr'%in%installed.packages()){
+  install.packages('ggpubr')
+}
+
+if(!'extrafont'%in%installed.packages()){
+  install.packages('extrafont')
+}
+
+if(!'plotly'%in%installed.packages()){
+  install.packages('plotly')
+}
+
+if(!"waffle" %in% installed.packages()) {
+  install.packages("waffle")
+}
+
+if(!"psych" %in% installed.packages()) {
+  install.packages("psych")
+}
+
+if(!"reshape2" %in% installed.packages()) {
+  install.packages("reshape2")
+}
+
+if(!"gridExtra" %in% installed.packages()) {
+  install.packages("gridExtra")
+}
+
+if(!"gridExtra" %in% installed.packages()) {
+  install.packages("gridExtra")
+}
+
+```
+
+Libraries:
+```{r libraries, echo=FALSE}
+library(ggthemes)
+library(ggplot2)
+library(ggExtra)
+library(psych)
+library(reshape2)
+library(dplyr)
+library(tidyr)
+library(scales)
+library(ggalt)
+library(ggthemes)
+library(ggpubr)
+library(extrafont)
+library(plotly)
+library(waffle)
+library(gridExtra)
+```
+
+## 1. Data preparation
+Loading the potatoes dataset. For our analyses we also opted to include a prices_at_start_end dataset and make an aggregated dataset with the average for each country per year of our potatoes dataset. This last dataset will be used in small multiples for the Waffle Charts later.
+
+```{r dataset, echo=TRUE}
+potatoes <- read.csv('https://gist.githubusercontent.com/geraldwal/c631f71fd2f89b080ea66ce41752bbd5/raw/81f4b4f0c85ccfd411693be099f4d91a8f35ce0b/Data%2520Viz%2520Project%2520Code%2520Group%2520D',header=TRUE,sep=",")
+str(potatoes)
+potatoes <- potatoes[3:287,] #to exclude the EU aggregation
+head(potatoes)
+
+prices_at_start_end <- read.csv("https://gist.githubusercontent.com/francescamanoni/f3c901e6dad634c29d12a07730745972/raw/a38ae3228fc0fafef5d07aff48c9904a992301a5/Dumbbell%2520Chart%2520-%25202010-2015")
+
+aggdata <-aggregate(potatoes, by= list(potatoes$Country), 
+                    FUN=mean,na.rm=TRUE)
+aggdata$X<-NULL
+aggdata$Country<-NULL
+aggdata2<-aggdata[complete.cases(aggdata),]
+names(aggdata2)[1]<-'Countries'
+names(aggdata2)[5] <- 'Yield'
+names(aggdata2)[4] <- 'Production'
+aggdata2$Waffle <- aggdata2$Yield/10
+head(aggdata2)
+```
+
+## 2. Basic Charts
+```{r basics, echo=TRUE}
+colnames(potatoes)<-c('X','Country','Year','Area','Harvested','Yield','MainArea','Price')
+potatoes2<-potatoes[is.na(potatoes$Price)==F,]
+
+ggplot(potatoes2, aes(x=Year, y=Price)) + 
+  scale_colour_brewer(palette = "Dark2") +
+  geom_point(size=1, alpha=0.9) +
+  geom_line(color='purple4')+
+  theme_minimal()+
+  theme(axis.text.x=element_text(angle=45, hjust=1))+
+  ylab('Price per 100kg')+
+  facet_wrap( ~ Country, ncol=7)
+
+
+ggplot(potatoes2, aes(Price)) +
+  geom_density(aes(fill=factor(as.factor(Year))), alpha=0.4, color='transparent') +
+  xlab('Price per 100kg')+
+  theme_bw() + 
+  theme(panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(), 
+        panel.border = element_blank(),
+        axis.title = element_blank(), 
+        axis.text = element_blank(),
+        axis.ticks = element_blank())+
+  facet_wrap( ~ as.factor(Year), ncol=2)+
+  theme_tufte(base_size = 12)+
+  theme(legend.position = 'None')
+
+
+potatoes3<-potatoes[potatoes$Country!='Liechtenstein',]
+
+ggplot(potatoes3, aes(x=Year, y=Harvested/(Area*10))) + 
+  ylab('Harvested Production(T) per Ha of Area')+
+  theme_minimal()+
+  theme(axis.text.x=element_text(angle=45, hjust=1))+
+  geom_point( size=1, color="purple4")+
+  facet_wrap(~Country,ncol=6)+
+  geom_line(color='mediumseagreen')
+```
+
+## 3. Tufte Charts
+```{r tufte1, echo=TRUE}
+ggplot(potatoes2, aes(x=Year, y=Price)) + 
+  theme_tufte(ticks = FALSE, base_size = 8)+ 
+  scale_colour_brewer(palette = "Dark2") +
+  geom_point(size=1, alpha=0.9) +
+  geom_line(color='purple4')+
+  theme_minimal()+
+  theme(axis.text.x=element_text(angle=45, hjust=1))+
+  ylab('Price per 100kg')+
+  facet_wrap( ~ Country, ncol=5) + ggtitle("Price Over Time")
+
+ggplot(potatoes2, aes(x=Year, y=Yield)) + 
+  theme_tufte(ticks = FALSE, base_size = 8)+ 
+  scale_colour_brewer(palette = "Dark2") +
+  geom_point(size=1, alpha=0.9) +
+  geom_line(color='purple4')+
+  theme_minimal()+
+  theme(axis.text.x=element_text(angle=45, hjust=1))+
+  ylab('Price per 100kg')+
+  facet_wrap( ~ Country, ncol=5) +ggtitle("Yield Over Time")
+
+ggplot(potatoes2, aes(x=Year, y=Harvested)) + 
+  theme_tufte(ticks = FALSE, base_size = 8)+ 
+  scale_colour_brewer(palette = "Dark2") +
+  geom_point(size=1, alpha=0.9) +
+  geom_line(color='purple4')+
+  theme_minimal()+
+  theme(axis.text.x=element_text(angle=45, hjust=1))+
+  ylab('Price per 100kg')+
+  facet_wrap( ~ Country, ncol=5) +ggtitle("Harvested Area Over Time")
+
+ggplot(potatoes2, aes(x=Year, y=MainArea)) + 
+  theme_tufte(ticks = FALSE, base_size = 8)+ 
+  scale_colour_brewer(palette = "Dark2") +
+  geom_point(size=1, alpha=0.9) +
+  geom_line(color='purple4')+
+  theme_minimal()+
+  theme(axis.text.x=element_text(angle=45, hjust=1))+
+  ylab('Price per 100kg')+
+  facet_wrap( ~ Country, ncol=5) +ggtitle("Main Area Over Time")
+```
+2. Tufte Boxplot
+```{r tuftebox}
+ggplot(potatoes2, aes(factor(Country),Yield)) +  theme_tufte(base_size = 9, ticks=T) +  geom_tufteboxplot(outlier.colour="transparent", color= "#990000", size = 0.75) +  theme(axis.title=element_blank()) +  annotate("text", x = 50, y = 120, adj=50,  family="serif", label = c(""))+
+  facet_wrap( ~ Country, nrow=2) +ggtitle("Yield Descriptives")
+
+ggplot(potatoes2, aes(factor(Country), Price)) +  theme_tufte(base_size = 9, ticks=T) +  geom_tufteboxplot(outlier.colour="transparent", color= "#990000", size = 0.75) +  theme(axis.title=element_blank()) +  annotate("text", x = 50, y = 120, adj=50,  family="serif", label = c(""))+
+  facet_wrap( ~ Country, nrow=2) +ggtitle("Price Descriptives")
+```
+
+#3. Range-frame plot - showing lables only for the quantiles
+```{r tufte_range}
+potdata2<- potatoes2[complete.cases(potatoes2),]
+#X <- split(potdata2, potdata2$Country)
+ggplot(potdata2, aes(Yield, Price)) + 
+  geom_point(size=2, alpha=0.5, color="#990000")  + 
+  theme_tufte(base_size = 9, ticks=FALSE) +
+  xlab("Yield")+ 
+  ylab("Price")+ 
+  scale_x_continuous(breaks = round(as.vector(quantile(potatoes2$Yield)), digits = 1))+
+  scale_y_continuous(breaks = round(as.vector(quantile(potatoes2$Price)), digits = 1))+ facet_wrap( ~ Country, nrow=6)
+
+ggplot(potatoes2, aes(Harvested, Price)) + 
+  geom_point(size=2, alpha=0.5, color="#990000")  + 
+  theme_tufte(base_size = 9, ticks=FALSE) +
+  xlab("Harvested Area")+ 
+  ylab("Price")+ 
+  scale_x_continuous(breaks = round(as.vector(quantile(potatoes2$Harvested)), digits = 1))+
+  scale_y_continuous(breaks = round(as.vector(quantile(potatoes2$Price)), digits = 1))+ facet_wrap( ~ Country, nrow=6)
+
+ggplot(potatoes2, aes(Harvested, Yield)) + 
+  geom_point(size=2, alpha=0.5, color="#990000")  + 
+  theme_tufte(base_size = 9, ticks=FALSE) +
+  xlab("Harvested Area")+ 
+  ylab("Yield")+ 
+  scale_x_continuous(breaks = round(as.vector(quantile(potatoes2$Harvested)), digits = 1))+
+  scale_y_continuous(breaks = round(as.vector(quantile(potatoes2$Yield)), digits = 1))+ facet_wrap( ~ Country, nrow = 6)
+```
+
+4. Dot-dash scatterplot 
+```{r dotdash_scatter}
+ggplot(potatoes2, aes(Yield, Price)) + 
+  geom_point(size=1, alpha=0.6, color="#990000") + 
+  geom_rug(size=0.5, alpha=1, color="#990000") + 
+  theme_tufte(base_size = 10, ticks=F) + 
+  xlab("Yield") + 
+  ylab("Price") + facet_wrap( ~ Country, nrow=6)
+
+ggplot(potatoes2, aes(Harvested, Price)) + 
+  geom_point(size=0.9, alpha=0.6, color="#990000") + 
+  geom_rug(size=0.5, alpha=1, color="#990000") + 
+  theme_tufte(base_size = 10, ticks=F) + 
+  xlab("Harvested Area") + 
+  ylab("Price") + facet_wrap( ~ Country, nrow=6)
+
+ggplot(potatoes2, aes(Harvested, Yield)) + 
+  geom_point(size=0.9, alpha=0.6, color="#990000") + 
+  geom_rug(size=0.5, alpha=1, color="#990000") + 
+  theme_tufte(base_size = 10, ticks=F) + 
+  xlab("Harvested Area") + 
+  ylab("Yield") + facet_wrap( ~ Country, nrow=6)
+```
+
+5. Box-plot scatterplot  
+```{r boxplot_scatter}
+pp4 <- ggplot(potatoes2, aes(Yield, Price, color = Country)) + 
+  geom_point(size=1, alpha=1) + 
+  theme_tufte(base_size = 10, ticks=F) + ggtitle("Yield Vs Price")+
+  theme(axis.title=element_blank(), axis.text=element_blank())
+ggMarginal(pp4, type = "boxplot", size=30, fill = "purple4")
+pp4
+pp5 <- ggplot(potatoes2, aes(Harvested, Price, color = Country)) + 
+  geom_point(size=1, alpha=1) + 
+  theme_tufte(base_size = 10, ticks=F) + ggtitle("Harvested Area vs Price") +
+  theme(axis.title=element_blank(), axis.text=element_blank())
+ggMarginal(pp5, type = "boxplot", size=30, fill="purple4")
+pp5
+
+pp6 <- ggplot(potatoes2, aes(Harvested, Yield, color = Country)) + 
+  geom_point(size=1, alpha=1) + 
+  theme_tufte(base_size = 10, ticks=F) + ggtitle("Harvested Area vs Yield")+
+  theme(axis.title=element_blank(), axis.text=element_blank())
+ggMarginal(pp6, type = "boxplot", size=30, fill="purple4")
+pp6
+```
+
+
+6. Histogram scatterplot 
+```{r hist_scatter}
+# we can remove the factor wise point color encoding if needed (your opinions?)
+# no idea, Fra?
+pp7 <- ggplot(potatoes2, aes(Yield, Price, color = Country)) + 
+  geom_point(size=1, alpha=1) + 
+  theme_tufte(base_size = 5, ticks=F) + ggtitle("Yield vs Price")
+  theme(axis.title=element_blank(), axis.text=element_blank())
+ggMarginal(pp7, type = "histogram", size=20, fill="mediumseagreen")
+
+pp8 <- ggplot(potatoes2, aes(Yield, Harvested, color = Country)) + 
+  geom_point(size=1, alpha=1) + 
+  theme_tufte(base_size = 5, ticks=F) + ggtitle("Yield vs Harvested Area")
+  theme(axis.title=element_blank(), axis.text=element_blank())
+ggMarginal(pp8, type = "histogram", size=20, fill="mediumseagreen")
+
+pp9 <- ggplot(potatoes2, aes(Harvested, Price, color = Country)) + 
+  geom_point(size=1, alpha=1) + 
+  theme_tufte(base_size = 5, ticks=F) + ggtitle("Harvested Area vs Price")
+  theme(axis.title=element_blank(), axis.text=element_blank())
+ggMarginal(pp9, type = "histogram", size=20, fill="mediumseagreen")
+```
+
+#4. Waffle Charts
+For the waffle chart, we opted to compare with small multiples of countries' Yield of 100kg potatoe production per ha as an average over the 7 included years. In this way the countries who own most and least of their potatoe production will be quickly displayed.
+
+In this list, a waffle chart per country will be saved and later called to show.
+```{r plotlist}
+plot_list = list()
+```
+
+Loop in which Waffle charts are created and assigned to the plot_list
+```{r waffleloop}
+for (i in 1:length(aggdata2$Countries)){
+  assign(as.vector(aggdata2$Countries)[i],
+         p <- waffle(
+           aggdata2[i,8], rows = 8, keep=FALSE, size = 0.5,
+           colors = c("steelblue", "white"),
+           title = aggdata2$Countries[i],
+           xlab = "1sq = 10 yield / ha",
+           legend_pos="none"
+         )
+  )
+  plot_list[[i]] = p
+}
+```
+
+Calling and display of waffle charts in three columns
+```{r wafflemultiples}
+do.call("grid.arrange", c(plot_list, ncol=3))
+```
+
+#5. Dumbell Charts
+
+Dumbell GGplot
+```{r dumbell}
+ggplot(prices_at_start_end, aes(x=Price_2010, xend=Price_2015, y=Country, group=Country)) + 
+geom_dumbbell(colour="gray80", size=1, colour_x = "mediumseagreen", colour_xend="purple4", size_x= 1, size_xend = 3.3, 
+dot_guide=TRUE, dot_guide_size=0.5, dot_guide_colour = "grey") + 
+  theme_tufte() + labs(title = "Potato price range (EUR/100kg)", subtitle = "2010-2015")+
+  font("title", size = 17, color = "purple4", face="bold")+
+  font("subtitle", size = 14, color = "mediumseagreen")+ 
+  theme(plot.title = element_text(hjust=0.5))+
+  theme(plot.subtitle = element_text(hjust=0.5))+
+  theme(text=element_text(family="Helvetica Neue")) +
+  scale_color_identity() +
+  labs(y=NULL)+
+  xlab("Price")
+```
+
+Interactive plot with GGplot
+```{r dggplotly}
+t <- list(
+  family = "montserrat",
+  size = 12)
+
+plot_ly(prices_at_start_end, color = I("gray80")) %>%
+  add_segments(x = ~Price_2010, xend = ~Price_2015, y = ~Country, yend = ~Country, showlegend = FALSE) %>%
+  add_markers(x = ~Price_2010, y=~Country, name = "Price_2010", color = I("mediumseagreen")) %>%
+  add_markers(x = ~Price_2015, y = ~Country, name = "Price_2015", color = I("purple4")) %>%
+  layout(
+    title = "Potato price range (EUR/100kg) between 2010-2015",
+    font=t,
+    xaxis = list(title = "Price"),
+    yaxis = list(title = ""),
+    margin = list(l = 65))
+```
